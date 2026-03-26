@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 
 @dataclass
 class Task:
+    """Represent a care task for a pet."""
+
     description: str
     time: str
     duration: int
@@ -19,6 +21,8 @@ class Task:
 
 @dataclass
 class Pet:
+    """Represent a pet and its assigned tasks."""
+
     name: str
     species: str
     tasks: list[Task] = field(default_factory=list)
@@ -33,11 +37,13 @@ class Pet:
 
 
 class Owner:
+    """Represent a pet owner and their pets."""
+
     name: str
     pets: list[Pet]
 
     def __init__(self, name: str) -> None:
-        """Initialize an owner with no pets."""
+        """Initialize an owner with a name and no pets."""
         self.name = name
         self.pets = []
 
@@ -54,6 +60,8 @@ class Owner:
 
 
 class Scheduler:
+    """Organize, analyze, and explain pet care tasks."""
+
     @staticmethod
     def _time_to_minutes(time_value: str) -> int:
         """Convert an HH:MM time string to total minutes."""
@@ -62,7 +70,7 @@ class Scheduler:
 
     @classmethod
     def _task_window(cls, task: Task) -> tuple[int, int]:
-        """Return a task's time window as (start_minute, end_minute)."""
+        """Return a task time window as start and end minutes."""
         start_minute = cls._time_to_minutes(task.time)
         end_minute = start_minute + task.duration
         return start_minute, end_minute
@@ -72,7 +80,7 @@ class Scheduler:
         return owner.get_all_tasks()
 
     def sort_by_time(self, tasks: list[Task]) -> list[Task]:
-        """Return tasks sorted by time in ascending order."""
+        """Return tasks sorted by start time in ascending order."""
         return sorted(tasks, key=lambda task: self._time_to_minutes(task.time))
 
     def filter_tasks(self, tasks: list[Task], status: str) -> list[Task]:
@@ -87,7 +95,7 @@ class Scheduler:
         return [task for task in tasks if task.is_complete == desired_is_complete]
 
     def detect_conflicts(self, tasks: list[Task]) -> list[tuple[Task, Task]]:
-        """Detect overlapping task pairs based on time and duration."""
+        """Return task pairs that overlap in scheduled time."""
         conflicts: list[tuple[Task, Task]] = []
         sorted_tasks = self.sort_by_time(tasks)
 
@@ -103,7 +111,7 @@ class Scheduler:
         return conflicts
 
     def generate_daily_plan(self, tasks: list[Task]) -> list[Task]:
-        """Generate a day plan by ordering tasks chronologically."""
+        """Return a daily plan ordered by task start time."""
         return self.sort_by_time(tasks)
 
     def explain_plan(self, tasks: list[Task]) -> str:
