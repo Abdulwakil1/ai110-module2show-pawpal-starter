@@ -14,9 +14,23 @@ class Task:
     frequency: str
     is_complete: bool = False
 
-    def mark_complete(self) -> None:
-        """Mark this task as complete."""
+    def mark_complete(self) -> Task | None:
+        """Mark this task as complete and return a new recurring task if Daily.
+        
+        If frequency is 'Daily', returns a new Task instance with the same
+        description, duration, priority, and frequency, with is_complete=False.
+        Otherwise returns None.
+        """
         self.is_complete = True
+        if self.frequency.strip().lower() == "daily":
+            return Task(
+                description=self.description,
+                time=self.time,
+                duration=self.duration,
+                priority=self.priority,
+                frequency=self.frequency,
+            )
+        return None
 
 
 @dataclass
@@ -79,9 +93,25 @@ class Scheduler:
         """Retrieve all tasks from an owner's pets."""
         return owner.get_all_tasks()
 
+    def filter_by_pet(self, owner: Owner, pet_name: str) -> list[Task]:
+        """Return tasks assigned to the pet with the given name."""
+        normalized_pet_name = pet_name.strip().lower()
+        for pet in owner.pets:
+            if pet.name.strip().lower() == normalized_pet_name:
+                return pet.get_tasks()
+        return []
+
     def sort_by_time(self, tasks: list[Task]) -> list[Task]:
-        """Return tasks sorted by start time in ascending order."""
-        return sorted(tasks, key=lambda task: self._time_to_minutes(task.time))
+        """Return tasks sorted by start time, priority, and duration."""
+        priority_ranking = {"high": 0, "medium": 1, "low": 2}
+        return sorted(
+            tasks,
+            key=lambda task: (
+                self._time_to_minutes(task.time),
+                priority_ranking.get(task.priority.lower(), 3),
+                task.duration,
+            ),
+        )
 
     def filter_tasks(self, tasks: list[Task], status: str) -> list[Task]:
         """Return tasks that match the requested completion status."""
@@ -105,7 +135,9 @@ class Scheduler:
                 next_start, next_end = self._task_window(next_task)
                 if next_start >= current_end:
                     break
-                if current_start < next_end and next_start < current_end:
+                # A conflict means the two task time windows overlap.
+                overlap_detected = current_start < next_end and next_start < current_end
+                if overlap_detected:
                     conflicts.append((current_task, next_task))
 
         return conflicts

@@ -6,8 +6,9 @@ Covers:
 """
 
 import pytest
+import main as pawpal_main
 
-from pawpal_system import Pet, Task
+from pawpal_system import Owner, Pet, Scheduler, Task
 
 
 def test_task_completion() -> None:
@@ -22,9 +23,10 @@ def test_task_completion() -> None:
 
 	assert task.is_complete is False
 
-	task.mark_complete()
+	next_task = task.mark_complete()
 
 	assert task.is_complete is True
+	assert next_task is not None
 
 
 def test_task_completion_is_idempotent() -> None:
@@ -112,3 +114,127 @@ def test_add_multiple_tasks_to_pet(
 	pet.add_task(task)
 
 	assert task in pet.get_tasks()
+
+
+def test_filter_by_pet_returns_matching_tasks_and_empty_when_missing() -> None:
+	"""Verify Scheduler.filter_by_pet returns tasks for matching pet only."""
+	owner = Owner("Amina")
+	dog = Pet(name="Buddy", species="Dog")
+	cat = Pet(name="Luna", species="Cat")
+
+	dog_task = Task(
+		description="Morning walk",
+		time="08:00",
+		duration=30,
+		priority="High",
+		frequency="Daily",
+	)
+	cat_task = Task(
+		description="Litter cleaning",
+		time="09:00",
+		duration=15,
+		priority="Medium",
+		frequency="Daily",
+	)
+
+	dog.add_task(dog_task)
+	cat.add_task(cat_task)
+	owner.add_pet(dog)
+	owner.add_pet(cat)
+
+	scheduler = Scheduler()
+
+	buddy_tasks = scheduler.filter_by_pet(owner, "Buddy")
+	assert buddy_tasks == [dog_task]
+
+	missing_pet_tasks = scheduler.filter_by_pet(owner, "Mochi")
+	assert missing_pet_tasks == []
+
+
+def test_filter_by_pet_is_case_insensitive() -> None:
+	"""Verify Scheduler.filter_by_pet matches pet names ignoring case."""
+	owner = Owner("Amina")
+	dog = Pet(name="Buddy", species="Dog")
+	dog_task = Task(
+		description="Morning walk",
+		time="08:00",
+		duration=30,
+		priority="High",
+		frequency="Daily",
+	)
+	dog.add_task(dog_task)
+	owner.add_pet(dog)
+
+	scheduler = Scheduler()
+
+	buddy_tasks_lowercase = scheduler.filter_by_pet(owner, "buddy")
+	assert buddy_tasks_lowercase == [dog_task]
+
+
+def test_mark_complete_daily_returns_new_task() -> None:
+	"""Verify mark_complete() returns a new Task with same properties for Daily frequency."""
+	task = Task(
+		description="Morning walk",
+		time="08:00",
+		duration=30,
+		priority="High",
+		frequency="Daily",
+	)
+
+	assert task.is_complete is False
+
+	next_task = task.mark_complete()
+
+	assert task.is_complete is True
+	assert next_task is not None
+	assert next_task.description == "Morning walk"
+	assert next_task.time == "08:00"
+	assert next_task.duration == 30
+	assert next_task.priority == "High"
+	assert next_task.frequency == "Daily"
+	assert next_task.is_complete is False
+	assert next_task is not task
+
+
+def test_mark_complete_weekly_returns_none() -> None:
+	"""Verify mark_complete() returns None for non-Daily frequency."""
+	task = Task(
+		description="Groom dog",
+		time="10:00",
+		duration=45,
+		priority="Medium",
+		frequency="Weekly",
+	)
+
+	assert task.is_complete is False
+
+	next_task = task.mark_complete()
+
+	assert task.is_complete is True
+	assert next_task is None
+
+
+def test_main_prints_conflicts_section_with_overlap(capsys: pytest.CaptureFixture[str]) -> None:
+	"""Verify main() prints the conflicts section and overlap details."""
+	pawpal_main.main()
+	captured = capsys.readouterr().out
+
+	assert "Conflicts" in captured
+	assert (
+		"Morning walk (08:00) conflicts with Breakfast feeding (08:15)"
+		in captured
+	)
+
+
+def test_main_prints_no_conflicts_message_when_none_found(
+	monkeypatch: pytest.MonkeyPatch,
+	capsys: pytest.CaptureFixture[str],
+) -> None:
+	"""Verify main() prints fallback text when no conflicts are detected."""
+	monkeypatch.setattr(Scheduler, "detect_conflicts", lambda self, tasks: [])
+
+	pawpal_main.main()
+	captured = capsys.readouterr().out
+
+	assert "Conflicts" in captured
+	assert "No conflicts detected" in captured

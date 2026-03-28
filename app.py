@@ -131,12 +131,21 @@ if st.button("Generate schedule"):
     scheduler = Scheduler()
     all_tasks = scheduler.get_all_tasks(owner)
     plan = scheduler.generate_daily_plan(all_tasks)
+    conflicts = scheduler.detect_conflicts(plan)
 
     if plan:
         for t in plan:
             st.write(f"{t.time} | {t.description}")
     else:
         st.warning("No tasks to schedule.")
+
+    if conflicts:
+        st.warning("Task conflicts detected:")
+        for first_task, second_task in conflicts:
+            st.write(
+                f"- {first_task.description} ({first_task.time}) conflicts with "
+                f"{second_task.description} ({second_task.time})"
+            )
 
     st.markdown("### Explanation")
     st.write(scheduler.explain_plan(plan))
