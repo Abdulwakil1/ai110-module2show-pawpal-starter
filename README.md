@@ -22,6 +22,33 @@ Your final app should:
 - Display the plan clearly (and ideally explain the reasoning)
 - Include tests for the most important scheduling behaviors
 
+## ✨ Features
+
+- **Task Sorting** – Organize tasks chronologically by start time, with secondary sorting by priority and duration.
+- **Conflict Detection** – Identify overlapping tasks that cannot be completed simultaneously.
+- **Daily Recurrence** – Automatically generate a new task instance when a daily recurring task is marked complete.
+- **Pet Filtering** – Retrieve and filter tasks by pet name with case-insensitive matching.
+- **Interactive Task Completion** – Mark tasks as done in the UI and generate next-day instances for recurring tasks.
+- **Daily Plan Explanation** – Display a clear, readable breakdown of the day's schedule with task times, durations, priorities, and status.
+
+## 📸 Demo
+
+**Full Schedule View**
+**Task Added**
+<a href="images/pawpal_screenshot_1.png" target="_blank"><img src='images/pawpal_screenshot_1.png' title='PawPal App - Schedule View' width='' alt='PawPal App' class='center-block' /></a>
+
+**Current Tasks**
+<a href="images/pawpal_screenshot_2.png" target="_blank"><img src='images/pawpal_screenshot_2.png' title='PawPal App - Conflict Warning' width='' alt='PawPal App' class='center-block' /></a>
+
+**Conflict Detection**
+<a href="images/pawpal_conflict_3.png" target="_blank"><img src='images/pawpal_conflict_3.png' title='PawPal App - Task Completion' width='' alt='PawPal App' class='center-block' /></a>
+
+**Making Task Complete**
+<a href="images/pawpal_screenshot_4.png" target="_blank"><img src='images/pawpal_screenshot_4.png' title='PawPal App - Task Completion' width='' alt='PawPal App' class='center-block' /></a>
+
+**No conflict**
+<a href="images/pawpal_no_conflict_5.png" target="_blank"><img src='images/pawpal_no_conflict_5.png' title='PawPal App - Task Completion' width='' alt='PawPal App' class='center-block' /></a>
+
 ## Smarter Scheduling
 
 The system includes several algorithmic improvements:

@@ -1,4 +1,3 @@
-
 import streamlit as st
 from pawpal_system import Owner, Pet, Task, Scheduler
 
@@ -122,30 +121,144 @@ else:
 
 st.divider()
 
+# # ----------------------------
+# # SCHEDULER
+# # ----------------------------
+# st.subheader("Schedule")
+
+# if st.button("Generate schedule"):
+#     scheduler = Scheduler()
+#     all_tasks = scheduler.get_all_tasks(owner)
+#     plan = scheduler.generate_daily_plan(all_tasks)
+#     conflicts = scheduler.detect_conflicts(plan)
+
+#     """Display the backend-sorted daily plan in a table with task completion status."""
+#     if plan:
+#         st.caption("Tasks sorted by time, priority, and duration")
+
+#         table_lines = [
+#             "| Time | Description | Priority | Duration (min) | Status |",
+#             "|---|---|---|---:|---|",
+#         ]
+
+#         for t in plan:
+#             safe_description = t.description.replace("|", r"\|")
+#             status_text = "✅ Complete" if t.is_complete else "⏳ Incomplete"
+#             table_lines.append(
+#                 f"| {t.time} | {safe_description} | {t.priority} | {t.duration} | {status_text} |"
+#             )
+
+#         st.markdown("\n".join(table_lines))
+#     else:
+#         st.warning("No tasks to schedule.")
+
+#     """Show conflict diagnostics after plan generation, or confirm a conflict-free plan."""
+#     if conflicts:
+#         st.warning("Task conflicts detected:")
+#         for first_task, second_task in conflicts:
+#             st.write(
+#                 f"{first_task.description} ({first_task.time}) conflicts with "
+#                 f"{second_task.description} ({second_task.time})"
+#             )
+#     else:
+#         st.success("No conflicts detected.")
+
+#     st.markdown("### Explanation")
+#     st.write(scheduler.explain_plan(plan))
+
 # ----------------------------
 # SCHEDULER
 # ----------------------------
 st.subheader("Schedule")
 
+# Initialize session state (safe, no side effects)
+st.session_state.setdefault("plan", [])
+st.session_state.setdefault("pet", None)
+
+# Button ONLY generates and stores data
 if st.button("Generate schedule"):
     scheduler = Scheduler()
     all_tasks = scheduler.get_all_tasks(owner)
     plan = scheduler.generate_daily_plan(all_tasks)
+
+    # Save so it persists after rerun
+    st.session_state["plan"] = plan
+    st.session_state["pet"] = pet
+
+# Always read from session state
+plan = st.session_state["plan"]
+pet = st.session_state["pet"]
+
+# ----------------------------
+# DISPLAY (outside button)
+# ----------------------------
+if plan:
+    scheduler = Scheduler()
     conflicts = scheduler.detect_conflicts(plan)
 
-    if plan:
-        for t in plan:
-            st.write(f"{t.time} | {t.description}")
-    else:
-        st.warning("No tasks to schedule.")
+    st.caption("Tasks sorted by time, priority, and duration")
 
+    table_lines = [
+        "| Time | Description | Priority | Duration (min) | Status |",
+        "|---|---|---|---:|---|",
+    ]
+
+    for t in plan:
+        safe_description = t.description.replace("|", r"\|")
+        status_text = "✅ Complete" if t.is_complete else "⏳ Incomplete"
+        table_lines.append(
+            f"| {t.time} | {safe_description} | {t.priority} | {t.duration} | {status_text} |"
+        )
+
+    st.markdown("\n".join(table_lines))
+
+    # ✅ NEW: Task completion UI (safe)
+    st.subheader("Mark Tasks Complete")
+
+    for idx, task in enumerate(plan):
+        checked = st.checkbox(
+            f"{task.time} — {task.description}",
+            value=task.is_complete,
+            key=f"complete_task_{idx}_{task.time}_{task.description}",
+        )
+
+        if checked != task.is_complete:
+            if checked:
+                if not task.is_complete:
+                    task.is_complete = True
+                    new_task = task.mark_complete()
+
+                    if new_task:
+                        st.success(
+                            f"'{task.description}' marked complete. Next occurrence prepared."
+                        )
+                    else:
+                        st.info(f"'{task.description}' marked complete.")
+            else:
+                task.is_complete = False
+                st.info(f"'{task.description}' marked as incomplete.")
+
+            st.session_state["plan"] = plan
+            st.rerun()
+
+    # ----------------------------
+    # CONFLICTS (unchanged logic)
+    # ----------------------------
     if conflicts:
         st.warning("Task conflicts detected:")
         for first_task, second_task in conflicts:
             st.write(
-                f"- {first_task.description} ({first_task.time}) conflicts with "
+                f"{first_task.description} ({first_task.time}) conflicts with "
                 f"{second_task.description} ({second_task.time})"
             )
+    else:
+        st.success("No conflicts detected.")
 
+    # ----------------------------
+    # EXPLANATION (unchanged)
+    # ----------------------------
     st.markdown("### Explanation")
     st.write(scheduler.explain_plan(plan))
+
+else:
+    st.warning("No tasks to schedule.")
